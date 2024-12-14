@@ -11,11 +11,14 @@ def train_model(args):
     # Enable GPU memory growth
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
-        print(f"GPUs available: {len(gpus)}")
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
+        try:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            print(f"GPUs detected: {len(gpus)}")
+        except RuntimeError as e:
+            print(f"Error enabling GPU memory growth: {e}")
     else:
-        print("No GPUs detected. Training will use the CPU.")
+        print("No GPUs detected. Training will use CPU.")
     
     # Create directory for saved models if it doesn't exist
     os.makedirs(os.path.dirname(args.model_path), exist_ok=True)
