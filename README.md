@@ -85,12 +85,12 @@ Advanced training with custom parameters:
 ```bash
 python train/train.py \
     --data_path data/truyen_kieu.txt \
-    --seq_length 100 \
+    --seq_length 50 \
     --embedding_dim 256 \
     --lstm_units 256 \
     --epochs 50 \
-    --batch_size 64 \
-    --model_path models/saved_models/poetry_model.h5
+    --batch_size 32 \
+    --model_path models/saved_models/poetry_model.keras
 ```
 
 Available training parameters:
@@ -171,4 +171,30 @@ Trăm năm trong cõi người ta,
 Chữ tình chữ hiếu thật là đắng cay.
 Đêm thanh một giấc mộng say,
 Hồn xiêu phách lạc như bay giữa trời...
+```
+
+⚠️ **Warning**:
+- Training requires significant system memory (minimum 16GB RAM recommended)
+- Large memory allocations may occur during training due to model size
+- Without GPU acceleration, training will be slower
+- Watch for memory warnings in the console during training
+- If encountering memory issues, try reducing batch size
+
+### Training the Model
+
+Basic training:
+```bash
+python train/train.py
+```
+
+Advanced training with custom parameters:
+```bash
+python train/train.py \
+    --data_path data/truyen_kieu.txt \
+    --seq_length 100 \
+    --embedding_dim 256 \
+    --lstm_units 256 \
+    --epochs 50 \
+    --batch_size 64 \
+    --model_path models/saved_models/poetry_model.keras
 ```
