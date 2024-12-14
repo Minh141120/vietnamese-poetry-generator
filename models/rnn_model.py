@@ -20,23 +20,19 @@ def build_model(vocab_size, seq_length, embedding_dim=100, lstm_units=150):
         Embedding(vocab_size, embedding_dim, input_length=seq_length-1),
         
         # First Bidirectional LSTM layer with configurable units
-        # Bidirectional LSTMs improve context capture in both directions
         Bidirectional(LSTM(lstm_units, return_sequences=True)),
         Dropout(0.2),  # Dropout to prevent overfitting
         
         # Second LSTM layer with fewer units for dimensionality reduction
-        # Reducing the number of units helps in better feature selection
         LSTM(lstm_units // 2),
         
         # Intermediate dense layer with half vocabulary size
-        # Activation function 'relu' adds non-linearity for complex mappings
-        # L2 regularization helps prevent overfitting by penalizing large weights
         Dense(vocab_size // 2, 
               activation='relu',
               kernel_regularizer=regularizers.l2(0.01)),
         
-        # Output layer with full vocabulary size
-        # Softmax activation to generate probability distribution over vocabulary
+        # Output layer with full vocabulary size 
+        # Softmax activation for probability distribution over vocabulary
         Dense(vocab_size, activation='softmax')
     ])
     
@@ -48,12 +44,4 @@ def build_model(vocab_size, seq_length, embedding_dim=100, lstm_units=150):
         metrics=['accuracy']
     )
     
-    return model
-
-
-# Optional function to print model architecture
-def print_model_summary(vocab_size, seq_length):
-    """Print summary of model architecture."""
-    model = build_model(vocab_size, seq_length)
-    print(model.summary())
     return model

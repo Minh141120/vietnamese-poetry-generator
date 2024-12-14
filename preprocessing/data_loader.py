@@ -1,6 +1,7 @@
 import numpy as np
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.utils import to_categorical
 import re
 
 def load_data(file_path):
@@ -45,6 +46,9 @@ def create_sequences(text, tokenizer, seq_length):
     
     # Create predictors and label
     predictors, label = input_sequences[:, :-1], input_sequences[:, -1]
+    
+    # Convert labels to one-hot encoded form
+    label = to_categorical(label, num_classes=len(tokenizer.word_index) + 1)
     
     return predictors, label, max_sequence_len
 
