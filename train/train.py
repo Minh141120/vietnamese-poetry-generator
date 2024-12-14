@@ -7,6 +7,16 @@ from tensorflow.keras.utils import to_categorical
 
 def train_model(args):
     """Train the poetry generation model."""
+    
+    # Enable GPU memory growth
+    gpus = tf.config.list_physical_devices('GPU')
+    if gpus:
+        print(f"GPUs available: {len(gpus)}")
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    else:
+        print("No GPUs detected. Training will use the CPU.")
+    
     # Create directory for saved models if it doesn't exist
     os.makedirs(os.path.dirname(args.model_path), exist_ok=True)
     
