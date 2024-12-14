@@ -3,6 +3,7 @@ import os
 import tensorflow as tf
 from preprocessing.data_loader import load_data, preprocess_text
 from models.rnn_model import build_model
+from tensorflow.keras.utils import to_categorical
 
 def train_model(args):
     """Train the poetry generation model."""
@@ -13,6 +14,9 @@ def train_model(args):
     print("Loading and preprocessing data...")
     text = load_data(args.data_path)
     X, y, tokenizer, max_len = preprocess_text(text, args.seq_length)
+    
+    # Convert target labels to one-hot encoded format
+    y = to_categorical(y, num_classes=len(tokenizer.word_index) + 1)
     
     # Build model
     print("Building model...")
