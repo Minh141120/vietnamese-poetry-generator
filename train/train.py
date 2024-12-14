@@ -66,6 +66,8 @@ if __name__ == "__main__":
                       help='Number of training epochs')
     parser.add_argument('--batch_size', type=int, default=64,
                       help='Training batch size')
+    parser.add_argument('--model_path', type=str, default='model/poetry_model.h5', help='Path to save the trained model')
+
     
     args = parser.parse_args()
     train_model(args)
