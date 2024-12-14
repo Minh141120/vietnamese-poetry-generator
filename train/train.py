@@ -27,9 +27,11 @@ def train_model(args):
     # Define callbacks
     callbacks = [
         tf.keras.callbacks.ModelCheckpoint(
-            filepath='models/saved_models/model_{epoch:02d}.h5',
+            filepath='models/saved_models/model_{epoch:02d}.keras', # Updated to use .keras format
             save_best_only=True,
-            monitor='loss'
+            monitor='loss',
+            mode='min',
+            save_weights_only=False  # Ensure full model saving in .keras format
         ),
         tf.keras.callbacks.EarlyStopping(
             monitor='loss',
@@ -48,7 +50,7 @@ def train_model(args):
     )
     
     # Save final model
-    model.save('models/saved_models/final_model.h5')
+    model.save(args.model_path, save_format='keras')  # Use .keras format explicitly for consistency
     
     print("Training completed!")
 
@@ -66,8 +68,6 @@ if __name__ == "__main__":
                       help='Number of training epochs')
     parser.add_argument('--batch_size', type=int, default=64,
                       help='Training batch size')
-    parser.add_argument('--model_path', type=str, default='model/poetry_model.h5', help='Path to save the trained model')
-
     
     args = parser.parse_args()
     train_model(args)
