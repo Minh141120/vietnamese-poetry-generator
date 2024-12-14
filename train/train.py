@@ -7,7 +7,7 @@ from models.rnn_model import build_model
 def train_model(args):
     """Train the poetry generation model."""
     # Create directory for saved models if it doesn't exist
-    os.makedirs('models/saved_models', exist_ok=True)
+    os.makedirs(os.path.dirname(args.model_path), exist_ok=True)
     
     # Load and preprocess data
     print("Loading and preprocessing data...")
@@ -27,11 +27,11 @@ def train_model(args):
     # Define callbacks
     callbacks = [
         tf.keras.callbacks.ModelCheckpoint(
-            filepath='models/saved_models/model_{epoch:02d}.keras', # Updated to use .keras format
+            filepath=args.model_path,  # Use model_path provided by the user
             save_best_only=True,
             monitor='loss',
             mode='min',
-            save_weights_only=False  # Ensure full model saving in .keras format
+            save_weights_only=False  # Ensure full model saving
         ),
         tf.keras.callbacks.EarlyStopping(
             monitor='loss',
@@ -49,9 +49,6 @@ def train_model(args):
         callbacks=callbacks
     )
     
-    # Save final model
-    model.save(args.model_path, save_format='keras')  # Use .keras format explicitly for consistency
-    
     print("Training completed!")
 
 if __name__ == "__main__":
@@ -68,6 +65,7 @@ if __name__ == "__main__":
                       help='Number of training epochs')
     parser.add_argument('--batch_size', type=int, default=64,
                       help='Training batch size')
-    
+    parser.add_argument('--model_path', type=str, default='models/saved_models/final_model.keras', help='Path to save the trained model')
+
     args = parser.parse_args()
     train_model(args)
