@@ -61,6 +61,7 @@ cd vietnamese-poetry-generator
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
+export PYTHONPATH=$(pwd)
 ```
 
 3. Install dependencies:
