@@ -86,7 +86,8 @@ Advanced training with custom parameters:
 python train/train.py \
     --data_path data/truyen_kieu.txt \
     --seq_length 100 \
-    --embedding_dim 100 \
+    --embedding_dim 256 \
+    --lstm_units 256 \
     --epochs 50 \
     --batch_size 64 \
     --model_path models/saved_models/poetry_model.h5
@@ -97,9 +98,11 @@ Available training parameters:
 |-----------|---------|-------------|
 | --data_path | data/truyen_kieu.txt | Path to dataset |
 | --seq_length | 100 | Sequence length for training |
-| --embedding_dim | 100 | Embedding dimension |
+| --embedding_dim | 256 | Embedding dimension |
+| --lstm_units | 256 | Number of LSTM units |
 | --epochs | 50 | Number of training epochs |
 | --batch_size | 64 | Batch size |
+| --model_path | models/saved_models/poetry_model.h5 | Path to save model |
 
 ### Generating Poetry
 
@@ -130,11 +133,11 @@ Model: "sequential"
 _________________________________________________________________
 Layer (type)                Output Shape              Param #
 =================================================================
-embedding (Embedding)       (None, seq_len, 100)      vocab_size * 100
-bidirectional_lstm         (None, seq_len, 300)      301,200
-dropout (Dropout)          (None, seq_len, 300)      0
-lstm (LSTM)                (None, 100)               160,400
-dense_1 (Dense)            (None, vocab_size/2)      vocab_size * 50
+embedding (Embedding)       (None, seq_len, 256)      vocab_size * 256
+bidirectional_lstm         (None, seq_len, 512)      1,050,624
+dropout (Dropout)          (None, seq_len, 512)      0
+lstm (LSTM)                (None, 256)               787,456
+dense_1 (Dense)            (None, vocab_size/2)      vocab_size * 128
 dense_2 (Dense)            (None, vocab_size)        vocab_size * vocab_size/2
 =================================================================
 ```
