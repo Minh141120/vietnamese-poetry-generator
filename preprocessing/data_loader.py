@@ -15,28 +15,37 @@ def load_data(file_path):
 
 def clean_text(text):
     """Clean and normalize text data."""
-    # Remove numbers
-    text = re.sub(r'\d+', '', text)
-    
-    # Convert to lowercase
-    text = text.lower()
-    
-    # Remove extra whitespace
-    text = re.sub(r'\s+', ' ', text)
+    # Remove line numbers and dots
+    text = re.sub(r'^\d+\.\.', '', text, flags=re.MULTILINE)
     
     # Split into lines and remove empty lines
     lines = [line.strip() for line in text.split('\n') if line.strip()]
     
-    return '\n'.join(lines)
+    return lines
 
-def create_sequences(text, tokenizer, seq_length):
-    """Create input sequences and corresponding targets."""
+def create_luc_bat_sequences(lines, seq_length=4):
+    """Create sequences of lục bát format (groups of 4 lines)."""
+    sequences = []
+    
+    # Process 4 lines at a time
+    for i in range(0, len(lines)-3, 2):  # Step by 2 to keep pairs together
+        four_lines = lines[i:i+4]
+        if len(four_lines) == 4:  # Only use complete sets of 4 lines
+            sequence = ' '.join(four_lines)
+            sequences.append(sequence)
+    
+    return sequences
+
+def create_training_sequences(sequences, tokenizer, seq_length):
+    """Create training sequences from lục bát groups."""
     input_sequences = []
     
-    for line in text.split('\n'):
-        token_list = tokenizer.texts_to_sequences([line])[0]
+    for sequence in sequences:
+        token_list = tokenizer.texts_to_sequences([sequence])[0]
         
-        for i in range(1, len(token_list)):
+        # Create subsequences while maintaining at least 4 lines context
+        min_length = 20  # Approximate minimum length for 4 lines
+        for i in range(min_length, len(token_list)):
             n_gram_sequence = token_list[:i+1]
             input_sequences.append(n_gram_sequence)
     
@@ -53,15 +62,18 @@ def create_sequences(text, tokenizer, seq_length):
     return predictors, label, max_sequence_len
 
 def preprocess_text(text, seq_length):
-    """Main preprocessing function."""
-    # Clean text
-    cleaned_text = clean_text(text)
+    """Main preprocessing function for lục bát poetry."""
+    # Clean text and get lines
+    lines = clean_text(text)
+    
+    # Create lục bát sequences (groups of 4 lines)
+    sequences = create_luc_bat_sequences(lines, seq_length)
     
     # Create tokenizer
     tokenizer = Tokenizer()
-    tokenizer.fit_on_texts(cleaned_text.split('\n'))
+    tokenizer.fit_on_texts(sequences)
     
-    # Create sequences
-    X, y, max_len = create_sequences(cleaned_text, tokenizer, seq_length)
+    # Create training sequences
+    X, y, max_len = create_training_sequences(sequences, tokenizer, seq_length)
     
     return X, y, tokenizer, max_len
