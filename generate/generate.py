@@ -1,60 +1,84 @@
+import os
 import argparse
-import numpy as np
 import tensorflow as tf
-from preprocessing.data_loader import load_data, preprocess_text
+import numpy as np
+import pickle
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+import logging
+import warnings
 
+# Suppress TensorFlow and warning messages
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow logging
+warnings.filterwarnings('ignore')  # Suppress warnings
+tf.get_logger().setLevel(logging.ERROR)  # Suppress TensorFlow warnings
+
+# Function to sample a word with temperature
 def sample_with_temperature(preds, temperature=1.0):
     """Sample an index from a probability array using temperature."""
     preds = np.asarray(preds).astype('float64')
-    preds = np.log(preds) / temperature
+    preds = np.log(np.clip(preds, 1e-10, 1.0)) / temperature  # Avoid log(0)
     exp_preds = np.exp(preds)
     preds = exp_preds / np.sum(exp_preds)
     probas = np.random.multinomial(1, preds, 1)
     return np.argmax(probas)
 
+# Function to generate poetry
+
 def generate_poem(model, seed_text, tokenizer, seq_length, length=100, temperature=0.7):
-    """Generate poetry text."""
+    """Generate poetry text following lục bát (6-8 syllable) structure."""
     generated_text = seed_text
-    for _ in range(length):
-        # Tokenize and pad the current text
+    current_line = seed_text
+    is_six_syllable_line = True  # Start with 6-syllable line after seed
+
+    while len(generated_text.split()) < length:
         token_list = tokenizer.texts_to_sequences([generated_text])[0]
         token_list = token_list[-seq_length:]
-        padded_sequence = tf.keras.preprocessing.sequence.pad_sequences(
+        padded_sequence = pad_sequences(
             [token_list], maxlen=seq_length, padding='pre'
         )
-        
-        # Predict next token
+
         predictions = model.predict(padded_sequence, verbose=0)[0]
         next_index = sample_with_temperature(predictions, temperature)
-        
-        # Convert token to word
+
         next_word = ""
         for word, index in tokenizer.word_index.items():
             if index == next_index:
                 next_word = word
                 break
-        
-        # Add to generated text
-        generated_text += " " + next_word
-        
-        # Add line break for poetry format
-        if len(generated_text.split('\n')[-1].split()) >= 8:  # Approximate line length
-            generated_text += "\n"
-    
+
+        current_line_words = current_line.split()
+        target_length = 6 if is_six_syllable_line else 8
+
+        # Handle cases where not enough words are generated for a valid line
+        if len(current_line_words) >= target_length:
+            generated_text += "\n" + next_word  # Move to the next line
+            current_line = next_word
+            is_six_syllable_line = not is_six_syllable_line
+        else:
+            current_line += " " + next_word
+            generated_text += " " + next_word
+
     return generated_text
 
-def main(args):
-    # Load data and tokenizer
-    text = load_data(args.data_path)
-    _, _, tokenizer, _ = preprocess_text(text, args.seq_length)
-    
-    # Load model
-    print(f"Loading model from {args.model_path}...")
-    model = tf.keras.models.load_model(args.model_path)
-    
-    # Generate poem
-    print(f"\nGenerating poem with seed text: '{args.seed_text}'")
-    poem = generate_poem(
+# Main function
+def main():
+    parser = argparse.ArgumentParser(description='Generate poetry using the trained model')
+    parser.add_argument('--model_path', required=True, help='Path to the trained model')
+    parser.add_argument('--seq_length', type=int, default=50, help='Length of input sequences')
+    parser.add_argument('--seed_text', required=True, help='Starting text for generation')
+    parser.add_argument('--length', type=int, default=200, help='Length of generated text')
+    parser.add_argument('--temperature', type=float, default=0.7, help='Sampling temperature')
+
+    args = parser.parse_args()
+
+    # Load model and tokenizer silently
+    model = tf.keras.models.load_model(args.model_path, compile=False)
+    tokenizer_path = os.path.join(os.path.dirname(args.model_path), 'tokenizer.pkl')
+    with open(tokenizer_path, 'rb') as f:
+        tokenizer = pickle.load(f)
+
+    # Generate and print poem
+    generated_poem = generate_poem(
         model=model,
         seed_text=args.seed_text,
         tokenizer=tokenizer,
@@ -62,26 +86,7 @@ def main(args):
         length=args.length,
         temperature=args.temperature
     )
-    
-    print("\nGenerated Poem:")
-    print("=" * 50)
-    print(poem)
-    print("=" * 50)
+    print(generated_poem)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Generate poetry using trained model')
-    parser.add_argument('--data_path', type=str, default='data/truyen_kieu.txt',
-                      help='Path to training data')
-    parser.add_argument('--model_path', type=str, default='models/saved_models/final_model.h5',
-                      help='Path to trained model')
-    parser.add_argument('--seq_length', type=int, default=100,
-                      help='Sequence length for generation')
-    parser.add_argument('--seed_text', type=str, default='Trăm năm trong cõi người ta',
-                      help='Starting text for generation')
-    parser.add_argument('--length', type=int, default=100,
-                      help='Length of generated text')
-    parser.add_argument('--temperature', type=float, default=0.7,
-                      help='Sampling temperature')
-    
-    args = parser.parse_args()
-    main(args)
+    main()
