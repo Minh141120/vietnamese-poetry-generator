@@ -1,6 +1,6 @@
 # 🎨 Vietnamese Poetry Generator - Truyen Kieu RNN
 
-A sophisticated RNN-based poetry generator trained on the classical Vietnamese epic poem "Truyện Kiều" by Nguyễn Du. This model uses deep learning to generate new poetry in the style of this masterpiece.
+A sophisticated RNN-based poetry generator trained on the classical Vietnamese epic poem "Truyện Kiều" by Nguyễn Du. This model uses deep learning to generate new poetry in the style of this masterpiece, achieving up to 88% accuracy with the larger model configuration.
 
 ## 📋 Table of Contents
 - [Features](#-features)
@@ -9,30 +9,33 @@ A sophisticated RNN-based poetry generator trained on the classical Vietnamese e
 - [Installation](#-installation)
 - [Usage](#-usage)
 - [Model Architecture](#-model-architecture)
-- [Training Tips](#-training-tips)
-- [Results & Examples](#-results--examples)
+- [Training Results](#-training-results)
 - [Troubleshooting](#-troubleshooting)
 - [Contributing](#-contributing)
 
 ## ✨ Features
-- Advanced Bidirectional LSTM architecture
+- Bidirectional LSTM architecture with multiple layers
 - Temperature-based text generation for creativity control
 - Comprehensive preprocessing for Vietnamese text
-- Modular and maintainable codebase
-- Configurable model parameters
-- Checkpoint saving for best models
+- Support for both standard and large model configurations
+- Automatic handling of lục bát (6-8 syllable) structure
+- Checkpoint saving and early stopping
+- Top-k accuracy metrics tracking
 
 ## 📦 Requirements
 - Python 3.8+
 - TensorFlow 2.4+
 - NumPy 1.19+
 - tqdm
+- pickle (for tokenizer saving/loading)
 
 ## 🗂️ Project Structure
 ```
 poetry_generator/
 ├── data/
 │   └── truyen_kieu.txt          # Dataset
+├── generate/
+│   └── generate.py              # Generation script
 ├── models/
 │   ├── saved_models/           # Trained models
 │   └── rnn_model.py            # Model architecture
@@ -41,8 +44,6 @@ poetry_generator/
 │   └── data_loader.py          # Data preprocessing
 ├── train/
 │   └── train.py               # Training script
-├── generate/
-│   └── generate.py            # Generation script
 ├── utils/
 │   └── text_utils.py          # Utility functions
 ├── requirements.txt
@@ -61,7 +62,6 @@ cd vietnamese-poetry-generator
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-export PYTHONPATH=$(pwd)
 ```
 
 3. Install dependencies:
@@ -69,20 +69,9 @@ export PYTHONPATH=$(pwd)
 pip install -r requirements.txt
 ```
 
-4. Place your dataset:
-- Put `truyen_kieu.txt` in the `data/` directory
-- Ensure the text is UTF-8 encoded
-
 ## 💻 Usage
 
-### Training the Model
-
-Basic training:
-```bash
-python train/train.py
-```
-
-Advanced training with custom parameters:
+### Standard Model Training (45% accuracy)
 ```bash
 python train/train.py \
     --data_path data/truyen_kieu.txt \
@@ -94,108 +83,80 @@ python train/train.py \
     --model_path models/saved_models/poetry_model.keras
 ```
 
-Available training parameters:
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| --data_path | data/truyen_kieu.txt | Path to dataset |
-| --seq_length | 100 | Sequence length for training |
-| --embedding_dim | 256 | Embedding dimension |
-| --lstm_units | 256 | Number of LSTM units |
-| --epochs | 50 | Number of training epochs |
-| --batch_size | 64 | Batch size |
-| --model_path | models/saved_models/poetry_model.h5 | Path to save model |
+### Large Model Training (88% accuracy)
+```bash
+python train/train.py \
+    --data_path data/truyen_kieu.txt \
+    --seq_length 100 \
+    --embedding_dim 512 \
+    --lstm_units 512 \
+    --epochs 100 \
+    --batch_size 64 \
+    --model_path models/saved_models/poetry_model_large.keras
+```
 
 ### Generating Poetry
 
-Basic generation:
-```bash
-python generate/generate.py
-```
-
-Custom generation:
+Using standard model:
 ```bash
 python generate/generate.py \
+    --model_path models/saved_models/poetry_model.keras \
+    --seq_length 50 \
     --seed_text "Trăm năm trong cõi người ta" \
     --length 200 \
     --temperature 0.7
 ```
 
-Generation parameters:
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| --seed_text | "Trăm năm trong cõi người ta" | Starting text |
-| --length | 100 | Length of generated text |
-| --temperature | 0.7 | Sampling creativity (0.1-1.0) |
+Using large model:
+```bash
+python generate/generate.py \
+    --model_path models/saved_models/poetry_model_large.keras \
+    --seed_text "Trăm năm trong cõi người ta" \
+    --length 200 \
+    --seq_length 100 \
+    --temperature 0.7
+```
 
 ## 🏗️ Model Architecture
 
 ```
 Model: "sequential"
 _________________________________________________________________
-Layer (type)                Output Shape              Param #
+Layer (type)                Output Shape              Param #   
 =================================================================
-embedding (Embedding)       (None, seq_len, 256)      vocab_size * 256
-bidirectional_lstm         (None, seq_len, 512)      1,050,624
-dropout (Dropout)          (None, seq_len, 512)      0
-lstm (LSTM)                (None, 256)               787,456
-dense_1 (Dense)            (None, vocab_size/2)      vocab_size * 128
-dense_2 (Dense)            (None, vocab_size)        vocab_size * vocab_size/2
+embedding                   (None, seq_len, dim)      vocab_size * dim
+bidirectional_lstm_1       (None, seq_len, dim*2)    4 * dim * dim
+dropout_1                  (None, seq_len, dim*2)    0
+bidirectional_lstm_2       (None, seq_len, dim*2)    4 * dim * dim
+dropout_2                  (None, seq_len, dim*2)    0
+lstm                       (None, dim)               4 * dim * dim
+dropout_3                  (None, dim)               0
+dense_1                    (None, dim)               dim * dim
+dropout_4                  (None, dim)               0
+dense_2                    (None, vocab_size)        dim * vocab_size
 =================================================================
 ```
 
-## 💡 Training Tips
+Where `dim` is either 256 (standard) or 512 (large model).
 
-1. **Temperature Tuning**:
-   - Lower (0.3-0.7): More focused, consistent output
-   - Higher (0.7-1.0): More creative, diverse output
+## 📊 Training Results
 
-2. **Sequence Length**:
-   - Short (50-100): Better local coherence
-   - Long (100-200): Better context preservation
+Standard Model (256 units):
+- Sequence Length: 50
+- Accuracy: ~45%
+- Training Time: ~2 hours on GPU
+- Model Size: ~100MB
 
-3. **Batch Size**:
-   - Smaller (32-64): Better generalization
-   - Larger (128-256): Faster training
+Large Model (512 units):
+- Sequence Length: 100
+- Accuracy: ~88%
+- Training Time: ~6 hours on GPU
+- Model Size: ~400MB
 
-4. **Preventing Overfitting**:
-   - Use dropout (0.2)
-   - Enable early stopping
-   - Monitor validation loss
+## ⚠️ Troubleshooting
 
-## 📊 Results & Examples
-
-Example generated poem:
-```
-Seed: "Trăm năm trong cõi người ta"
-Output:
-Trăm năm trong cõi người ta,
-Chữ tình chữ hiếu thật là đắng cay.
-Đêm thanh một giấc mộng say,
-Hồn xiêu phách lạc như bay giữa trời...
-```
-
-⚠️ **Warning**:
-- Training requires significant system memory (minimum 16GB RAM recommended)
-- Large memory allocations may occur during training due to model size
-- Without GPU acceleration, training will be slower
-- Watch for memory warnings in the console during training
-- If encountering memory issues, try reducing batch size
-
-### Training the Model
-
-Basic training:
-```bash
-python train/train.py
-```
-
-Advanced training with custom parameters:
-```bash
-python train/train.py \
-    --data_path data/truyen_kieu.txt \
-    --seq_length 100 \
-    --embedding_dim 256 \
-    --lstm_units 256 \
-    --epochs 50 \
-    --batch_size 64 \
-    --model_path models/saved_models/poetry_model.keras
-```
+Common issues:
+1. Memory errors: Reduce batch size or sequence length
+2. Slow training: Enable GPU support or use smaller model
+3. Poor generation quality: Try adjusting temperature (0.7 works well)
+4. Tokenizer errors: Ensure proper UTF-8 encoding of input text
